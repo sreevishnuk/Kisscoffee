@@ -1,6 +1,9 @@
 // app.js
 import { getAdminSettings, saveAdminSettings, auth, db, onAuthStateChanged, signOut } from './firebase.js';
 
+let currentCategory = 'Hot Drinks';
+let menuData = {}; // Global store for current menu state
+
 // DOM Elements
 const customMessageEl = document.getElementById('custom-message');
 const menuCategoriesEl = document.getElementById('menu-categories');
@@ -8,13 +11,11 @@ const servicesDisplayEl = document.getElementById('services-display');
 const openingHoursEl = document.getElementById('opening-hours');
 const adminLink = document.getElementById('admin-link');
 
-// Admin panel elements
 const loginForm = document.getElementById('admin-login-form');
 const loginError = document.getElementById('login-error');
 const adminDashboard = document.getElementById('admin-dashboard');
 const logoutBtn = document.getElementById('logout-btn');
 
-// Admin dashboard UI elements
 const customMessageEditor = document.getElementById('custom-message-editor');
 const saveMessageBtn = document.getElementById('save-message-btn');
 const monFriHours = document.getElementById('mon-fri-hours');
@@ -30,155 +31,149 @@ const addNewItemName = document.getElementById('new-item-name');
 const addNewItemPrice = document.getElementById('new-item-price');
 const addBtn = document.getElementById('add-item-btn');
 const saveAllBtn = document.getElementById('save-all-changes-btn');
-
-// Category tabs
 const categoryTabs = document.querySelectorAll('.category-tab');
-let currentCategory = 'Hot Drinks';
 
-// Load admin settings on page load
+// Load settings with error handling
 async function loadSettings() {
+    console.log('🔄 Loading admin settings...');
     try {
         const settings = await getAdminSettings();
-        
-        // Update homepage content
-        if (settings.customMessage) {
-            customMessageEl.innerHTML = settings.customMessage.replace(/\n/g, '<br>');
+        menuData = settings.menu;
+
+        // Homepage
+        if (customMessageEl) {
+            customMessageEl.innerHTML = settings.customMessage?.replace(/\n/g, '<br>') || 'Welcome to Kiss Coffee!';
         }
-        
-        // Update opening hours
-        openingHoursEl.innerHTML = `
-            <p><strong>Monday–Friday:</strong> ${settings.openingHours.mondayToFriday}</p>
-            <p><strong>Saturday:</strong> ${settings.openingHours.saturday}</p>
-            <p><strong>Sunday:</strong> ${settings.openingHours.sunday}</p>
-        `;
-        
-        // Update services
-        servicesDisplayEl.textContent = settings.services.join(', ');
-        
-        // Render menu preview
-        renderMenuPreview(settings.menu);
-        
-        // If on admin page, populate forms
+        if (openingHoursEl) {
+            openingHoursEl.innerHTML = `
+                <p><strong>Monday–Friday:</strong> ${settings.openingHours.mondayToFriday}</p>
+                <p><strong>Saturday:</strong> ${settings.openingHours.saturday}</p>
+                <p><strong>Sunday:</strong> ${settings.openingHours.sunday}</p>
+            `;
+        }
+        if (servicesDisplayEl) {
+            servicesDisplayEl.textContent = settings.services.join(', ');
+        }
+        if (menuCategoriesEl) {
+            renderMenuPreview(settings.menu);
+        }
+
+        // Admin panel
         if (document.body.classList.contains('admin-body')) {
             populateAdminForms(settings);
         }
-        
+
     } catch (error) {
-        console.error('Error loading settings:', error);
-        customMessageEl.textContent = 'Sorry, we\'re experiencing technical difficulties. Please check back soon!';
+        console.error('❌ Failed to load settings:', error);
+        alert('Failed to load website data. Check console.');
+        if (customMessageEl) {
+            customMessageEl.textContent = 'Sorry, we can’t load the menu right now.';
+        }
     }
 }
 
-// Render menu preview on homepage
 function renderMenuPreview(menu) {
     menuCategoriesEl.innerHTML = '';
-    
     Object.keys(menu).forEach(category => {
-        const categoryDiv = document.createElement('div');
-        categoryDiv.className = 'menu-category';
-        
-        const categoryTitle = document.createElement('h4');
-        categoryTitle.textContent = category;
-        categoryDiv.appendChild(categoryTitle);
-        
+        const div = document.createElement('div');
+        div.className = 'menu-category';
+        const h4 = document.createElement('h4');
+        h4.textContent = category;
+        div.appendChild(h4);
+
         menu[category].forEach(item => {
             const itemDiv = document.createElement('div');
             itemDiv.className = 'menu-item';
-            
-            const nameSpan = document.createElement('span');
-            nameSpan.textContent = item.name;
-            
-            const priceSpan = document.createElement('span');
-            priceSpan.textContent = item.price;
-            priceSpan.style.fontWeight = 'bold';
-            
-            itemDiv.appendChild(nameSpan);
-            itemDiv.appendChild(priceSpan);
-            categoryDiv.appendChild(itemDiv);
+            itemDiv.innerHTML = `<span>${item.name}</span><span>${item.price}</span>`;
+            div.appendChild(itemDiv);
         });
-        
-        menuCategoriesEl.appendChild(categoryDiv);
+
+        menuCategoriesEl.appendChild(div);
     });
 }
 
-// Populate admin forms with saved data
 function populateAdminForms(settings) {
-    // Custom message
     customMessageEditor.value = settings.customMessage || '';
-    
-    // Opening hours
     monFriHours.value = settings.openingHours.mondayToFriday || '';
     satHours.value = settings.openingHours.saturday || '';
     sunHours.value = settings.openingHours.sunday || '';
-    
-    // Services
     serviceDinein.checked = settings.services.includes('Dine-in');
     serviceTakeaway.checked = settings.services.includes('Takeaway');
-    
-    // Menu items
+
+    // Render initial category
     renderMenuItems(settings.menu);
 }
 
-// Render menu items for admin editing
 function renderMenuItems(menu) {
     menuItemContainer.innerHTML = '';
-    
-    // Create tabs and content for each category
+    currentCategory = 'Hot Drinks'; // fallback
+
+    // Activate first tab
     categoryTabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            // Remove active class from all tabs
-            categoryTabs.forEach(t => t.classList.remove('active'));
-            // Add active class to clicked tab
+        tab.classList.remove('active');
+        if (tab.dataset.category === 'Hot Drinks') {
             tab.classList.add('active');
-            currentCategory = tab.dataset.category;
-            
-            // Render items for selected category
-            renderCategoryItems(menu[currentCategory] || []);
-        });
+            currentCategory = 'Hot Drinks';
+        }
+        tab.removeEventListener('click', handleCategoryClick);
+        tab.addEventListener('click', handleCategoryClick);
     });
-    
-    // Set first tab as active by default
-    if (categoryTabs.length > 0) {
-        categoryTabs[0].classList.add('active');
-        currentCategory = categoryTabs[0].dataset.category;
-        renderCategoryItems(menu[currentCategory] || []);
-    }
+
+    renderCategoryItems(menu[currentCategory] || []);
 }
 
-// Render items for a specific category
+function handleCategoryClick(e) {
+    currentCategory = e.target.dataset.category;
+    categoryTabs.forEach(t => t.classList.remove('active'));
+    e.target.classList.add('active');
+    renderCategoryItems(menuData[currentCategory] || []);
+}
+
 function renderCategoryItems(items) {
     menuItemContainer.innerHTML = '';
-    
     if (!items || items.length === 0) {
         menuItemContainer.innerHTML = '<p class="menu-item-placeholder">No items in this category yet. Add some below!</p>';
         return;
     }
-    
+
     items.forEach((item, index) => {
         const itemDiv = document.createElement('div');
         itemDiv.className = 'menu-item-edit';
-        
+        itemDiv.setAttribute('data-index', index);
+        itemDiv.setAttribute('data-category', currentCategory);
+
         const nameInput = document.createElement('input');
         nameInput.type = 'text';
-        nameInput.value = item.name;
+        nameInput.name = 'name';
+        nameInput.value = item.name || '';
         nameInput.placeholder = 'Item name';
-        
+        nameInput.style.flex = '2';
+        nameInput.style.marginRight = '10px';
+
         const priceInput = document.createElement('input');
         priceInput.type = 'text';
-        priceInput.value = item.price;
+        priceInput.name = 'price';
+        priceInput.value = item.price || '';
         priceInput.placeholder = 'Price (e.g., £3.50)';
-        
+        priceInput.style.flex = '1';
+        priceInput.style.marginRight = '10px';
+
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'delete-btn';
         deleteBtn.textContent = 'Delete';
+        deleteBtn.style.flex = 'none';
+        deleteBtn.style.backgroundColor = '#d32f2f';
+        deleteBtn.style.color = 'white';
+        deleteBtn.style.border = 'none';
+        deleteBtn.style.padding = '6px 10px';
+        deleteBtn.style.borderRadius = '4px';
+        deleteBtn.style.cursor = 'pointer';
+
         deleteBtn.addEventListener('click', () => {
-            // Remove item from array and re-render
-            const currentMenu = JSON.parse(localStorage.getItem('tempMenu') || '{}');
-            currentMenu[currentCategory] = currentMenu[currentCategory]?.filter((_, i) => i !== index);
-            localStorage.setItem('tempMenu', JSON.stringify(currentMenu));
-            renderCategoryItems(currentMenu[currentCategory] || []);
+            menuData[currentCategory] = (menuData[currentCategory] || []).filter((_, i) => i !== index);
+            renderCategoryItems(menuData[currentCategory] || []);
         });
-        
+
         itemDiv.appendChild(nameInput);
         itemDiv.appendChild(priceInput);
         itemDiv.appendChild(deleteBtn);
@@ -186,75 +181,84 @@ function renderCategoryItems(items) {
     });
 }
 
+function getCurrentMenuState() {
+    const result = {};
+    const categories = ['Hot Drinks', 'Cold Drinks', 'Sweet Treats', 'Savoury Treats'];
+    categories.forEach(cat => {
+        result[cat] = [];
+        const items = document.querySelectorAll(`.menu-item-edit[data-category="${cat}"]`);
+        items.forEach(el => {
+            const nameInput = el.querySelector('input[name="name"]');
+            const priceInput = el.querySelector('input[name="price"]');
+            if (nameInput && priceInput && nameInput.value.trim() && priceInput.value.trim()) {
+                result[cat].push({
+                    name: nameInput.value.trim(),
+                    price: priceInput.value.trim()
+                });
+            }
+        });
+    });
+    return result;
+}
+
 // Event Listeners
 document.addEventListener('DOMContentLoaded', async () => {
-    // Load settings
     await loadSettings();
-    
-    // Handle admin link click
+
+    // Admin link
     if (adminLink) {
         adminLink.addEventListener('click', (e) => {
             e.preventDefault();
             window.location.href = '/admin.html';
         });
     }
-    
-    // Admin login form
+
+    // Admin login
     if (loginForm) {
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             loginError.textContent = '';
-            
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            
+
             try {
                 await signInWithEmailAndPassword(auth, email, password);
-                
-                // Show admin dashboard
                 loginForm.classList.add('hidden');
                 adminDashboard.classList.remove('hidden');
-                
-                // Load settings after successful login
-                const settings = await getAdminSettings();
-                populateAdminForms(settings);
-                
-            } catch (error) {
-                loginError.textContent = 'Invalid email or password. Please try again.';
-                console.error('Login error:', error);
+                console.log('✅ Logged in as admin');
+                loadSettings(); // Reload after login
+            } catch (err) {
+                loginError.textContent = 'Invalid email or password.';
+                console.error('Login failed:', err);
             }
         });
     }
-    
-    // Logout button
+
+    // Logout
     if (logoutBtn) {
         logoutBtn.addEventListener('click', async () => {
-            try {
-                await signOut(auth);
-                adminDashboard.classList.add('hidden');
-                loginForm.classList.remove('hidden');
-                loginError.textContent = '';
-            } catch (error) {
-                console.error('Logout error:', error);
-            }
+            await signOut(auth);
+            adminDashboard.classList.add('hidden');
+            loginForm.classList.remove('hidden');
+            console.log('✅ Logged out');
         });
     }
-    
+
     // Save custom message
     if (saveMessageBtn) {
         saveMessageBtn.addEventListener('click', async () => {
-            const message = customMessageEditor.value.trim();
+            const msg = customMessageEditor.value.trim();
+            if (!msg) return alert('Please enter a message');
             try {
-                await saveAdminSettings({ customMessage: message });
-                alert('Custom message saved successfully!');
-            } catch (error) {
-                console.error('Error saving message:', error);
-                alert('Failed to save message. Please try again.');
+                await saveAdminSettings({ customMessage: msg });
+                alert('✅ Message saved!');
+            } catch (err) {
+                alert('❌ Failed to save message.');
             }
         });
     }
-    
-    // Save opening hours
+
+    // Save hours
     if (saveHoursBtn) {
         saveHoursBtn.addEventListener('click', async () => {
             const hours = {
@@ -262,77 +266,61 @@ document.addEventListener('DOMContentLoaded', async () => {
                 saturday: satHours.value.trim(),
                 sunday: sunHours.value.trim()
             };
-            
             try {
                 await saveAdminSettings({ openingHours: hours });
-                alert('Opening hours saved successfully!');
-            } catch (error) {
-                console.error('Error saving hours:', error);
-                alert('Failed to save hours. Please try again.');
+                alert('✅ Hours saved!');
+            } catch (err) {
+                alert('❌ Failed to save hours.');
             }
         });
     }
-    
+
     // Save services
     if (saveServicesBtn) {
         saveServicesBtn.addEventListener('click', async () => {
             const services = [];
             if (serviceDinein.checked) services.push('Dine-in');
             if (serviceTakeaway.checked) services.push('Takeaway');
-            
             try {
                 await saveAdminSettings({ services });
-                alert('Services updated successfully!');
-            } catch (error) {
-                console.error('Error saving services:', error);
-                alert('Failed to update services. Please try again.');
+                alert('✅ Services updated!');
+            } catch (err) {
+                alert('❌ Failed to update services.');
             }
         });
     }
-    
-    // Add new menu item
+
+    // Add item
     if (addBtn) {
         addBtn.addEventListener('click', async () => {
-            const category = addNewItemCategory.value;
+            const cat = addNewItemCategory.value;
             const name = addNewItemName.value.trim();
             const price = addNewItemPrice.value.trim();
-            
-            if (!category || !name || !price) {
-                alert('Please fill in all fields');
-                return;
+
+            if (!cat || !name || !price) {
+                return alert('Please fill all fields');
             }
-            
+
+            if (!menuData[cat]) menuData[cat] = [];
+            menuData[cat].push({ name, price });
+
             try {
-                const settings = await getAdminSettings();
-                const updatedMenu = { ...settings.menu };
-                
-                if (!updatedMenu[category]) {
-                    updatedMenu[category] = [];
-                }
-                
-                updatedMenu[category].push({ name, price });
-                
-                await saveAdminSettings({ menu: updatedMenu });
-                
-                // Clear form
+                await saveAdminSettings({ menu: menuData });
+                alert('✅ Item added!');
                 addNewItemName.value = '';
                 addNewItemPrice.value = '';
                 addNewItemCategory.value = '';
-                
-                alert('Item added successfully!');
-                renderMenuItems(updatedMenu);
-                
-            } catch (error) {
-                console.error('Error adding item:', error);
-                alert('Failed to add item. Please try again.');
+                renderMenuItems(menuData);
+            } catch (err) {
+                alert('❌ Failed to add item.');
             }
         });
     }
-    
+
     // Save all changes
     if (saveAllBtn) {
         saveAllBtn.addEventListener('click', async () => {
-            // Collect all values
+            const newMenu = getCurrentMenuState();
             const message = customMessageEditor.value.trim();
             const hours = {
                 mondayToFriday: monFriHours.value.trim(),
@@ -342,46 +330,36 @@ document.addEventListener('DOMContentLoaded', async () => {
             const services = [];
             if (serviceDinein.checked) services.push('Dine-in');
             if (serviceTakeaway.checked) services.push('Takeaway');
-            
-            // Build menu object from inputs
-            const menu = {};
-            const categories = ['Hot Drinks', 'Cold Drinks', 'Sweet Treats', 'Savoury Treats'];
-            
-            categories.forEach(cat => {
-                const items = [];
-                const itemElements = document.querySelectorAll(`.menu-item-edit:nth-of-type(n)`);
-                itemElements.forEach(el => {
-                    const inputs = el.querySelectorAll('input');
-                    if (inputs.length >= 2) {
-                        const name = inputs[0].value.trim();
-                        const price = inputs[1].value.trim();
-                        if (name && price) {
-                            items.push({ name, price });
-                        }
-                    }
-                });
-                menu[cat] = items;
-            });
-            
+
             try {
                 await saveAdminSettings({
                     customMessage: message,
                     openingHours: hours,
-                    services: services,
-                    menu: menu
+                    services,
+                    menu: newMenu
                 });
-                alert('All changes saved successfully!');
-            } catch (error) {
-                console.error('Error saving all changes:', error);
-                alert('Failed to save all changes. Please try again.');
+                alert('✅ ALL CHANGES SAVED!');
+                menuData = newMenu; // Update global state
+                renderMenuPreview(newMenu); // Update homepage preview if visible
+            } catch (err) {
+                alert('❌ FAILED TO SAVE ALL CHANGES. CHECK CONSOLE.');
+                console.error(err);
             }
+        });
+    }
+
+    // Initialize category tabs
+    if (categoryTabs.length > 0) {
+        categoryTabs[0].classList.add('active');
+        currentCategory = categoryTabs[0].dataset.category;
+        categoryTabs.forEach(tab => {
+            tab.addEventListener('click', handleCategoryClick);
         });
     }
 });
 
-// Listen for authentication state changes
+// Listen to auth state
 onAuthStateChanged(auth, (user) => {
-    // If user is logged in and on admin page, show dashboard
     if (document.body.classList.contains('admin-body')) {
         if (user) {
             loginForm.classList.add('hidden');
