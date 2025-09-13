@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kiss Coffee Admin Panel</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body class="admin-body">
+    <div class="admin-container">
+        <!-- Login Form (shown by default) -->
+        <div id="login-form" class="admin-panel">
+            <h2>Admin Login</h2>
+            <form id="admin-login-form">
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" required placeholder="admin@kisscoffee.co.uk">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" required placeholder="Enter your password">
+                </div>
+                <button type="submit" class="btn btn-primary">Login</button>
+                <div id="login-error" class="error-message"></div>
+            </form>
+        </div>
+
+        <!-- Admin Dashboard (hidden until login) -->
+        <div id="admin-dashboard" class="admin-panel hidden">
+            <div class="dashboard-header">
+                <h2>Kiss Coffee Admin Panel</h2>
+                <button id="logout-btn" class="btn btn-secondary">Logout</button>
+            </div>
+
+            <!-- Custom Message Editor -->
+            <div class="panel-section">
+                <h3>Homepage Message</h3>
+                <textarea id="custom-message-editor" rows="4" placeholder="Enter the custom message that appears on the homepage..."></textarea>
+                <button id="save-message-btn" class="btn btn-primary">Save Message</button>
+            </div>
+
+            <!-- Opening Hours Editor -->
+            <div class="panel-section">
+                <h3>Opening Hours</h3>
+                <div class="form-group">
+                    <label for="mon-fri-hours">Monday–Friday:</label>
+                    <input type="text" id="mon-fri-hours" placeholder="e.g., 8am–5pm">
+                </div>
+                <div class="form-group">
+                    <label for="sat-hours">Saturday:</label>
+                    <input type="text" id="sat-hours" placeholder="e.g., 8am–3pm">
+                </div>
+                <div class="form-group">
+                    <label for="sun-hours">Sunday:</label>
+                    <input type="text" id="sun-hours" placeholder="e.g., Closed">
+                </div>
+                <button id="save-hours-btn" class="btn btn-primary">Save Hours</button>
+            </div>
+
+            <!-- Services Editor -->
+            <div class="panel-section">
+                <h3>Service Options</h3>
+                <div class="service-options">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="service-dinein" value="Dine-in">
+                        Dine-in
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="service-takeaway" value="Takeaway">
+                        Takeaway
+                    </label>
+                    <!-- Delivery is disabled per requirements -->
+                    <p class="service-note">Note: Delivery is not available as per business policy.</p>
+                </div>
+                <button id="save-services-btn" class="btn btn-primary">Save Services</button>
+            </div>
+
+            <!-- Menu Editor -->
+            <div class="panel-section">
+                <h3>Menu Management</h3>
+                <div class="menu-category-list">
+                    <!-- Category tabs -->
+                    <div class="category-tabs">
+                        <button class="category-tab active" data-category="Hot Drinks">Hot Drinks</button>
+                        <button class="category-tab" data-category="Cold Drinks">Cold Drinks</button>
+                        <button class="category-tab" data-category="Sweet Treats">Sweet Treats</button>
+                        <button class="category-tab" data-category="Savoury Treats">Savoury Treats</button>
+                    </div>
+
+                    <!-- Items list -->
+                    <div id="menu-items-container">
+                        <!-- Dynamic items will appear here -->
+                        <div class="menu-item-placeholder">
+                            <p>Select a category to manage menu items.</p>
+                        </div>
+                    </div>
+
+                    <!-- Add new item form -->
+                    <div class="add-item-form">
+                        <h4>Add New Item</h4>
+                        <select id="new-item-category">
+                            <option value="">Select Category</option>
+                            <option value="Hot Drinks">Hot Drinks</option>
+                            <option value="Cold Drinks">Cold Drinks</option>
+                            <option value="Sweet Treats">Sweet Treats</option>
+                            <option value="Savoury Treats">Savoury Treats</option>
+                        </select>
+                        <input type="text" id="new-item-name" placeholder="Item name">
+                        <input type="text" id="new-item-price" placeholder="Price (e.g., £3.50)">
+                        <button id="add-item-btn" class="btn btn-success">Add Item</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Save All Changes Button -->
+            <div class="save-all-container">
+                <button id="save-all-changes-btn" class="btn btn-primary">Save All Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script type="module" src="firebase.js"></script>
+    <script type="module" src="app.js"></script>
+</body>
+</html>

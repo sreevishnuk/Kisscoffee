@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kiss Coffee - Minehead's Cozy Coffee Spot</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="container">
+            <h1>Kiss Coffee</h1>
+            <p>16 Friday Street, Minehead, TA24 5UA</p>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="#home">Home</a></li>
+                    <li><a href="#menu">Menu</a></li>
+                    <li><a href="#hours">Hours</a></li>
+                    <li><a href="#" id="admin-link">Admin</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section with Custom Message -->
+    <section class="hero">
+        <div class="container">
+            <div class="custom-message" id="custom-message">
+                Loading welcome message...
+            </div>
+        </div>
+    </section>
+
+    <!-- Menu Preview Section -->
+    <section class="menu-preview">
+        <div class="container">
+            <h2>Our Menu</h2>
+            <div class="menu-categories" id="menu-categories">
+                <!-- Menu categories will be loaded dynamically -->
+                <p>Loading menu...</p>
+            </div>
+            <div class="cta-section">
+                <p>Available services: <span id="services-display">Loading services...</span></p>
+                <a href="#menu" class="btn btn-primary">View Full Menu</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Hours & Location Section -->
+    <section class="hours-location">
+        <div class="container">
+            <div class="info-card">
+                <h3>Opening Hours</h3>
+                <div id="opening-hours">
+                    Loading hours...
+                </div>
+            </div>
+            <div class="info-card">
+                <h3>Visit Us</h3>
+                <p>16 Friday Street<br>Minehead, TA24 5UA</p>
+                <p>Just a short stroll from the harbour!</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="container">
+            <p>&copy; 2023 Kiss Coffee. All rights reserved.</p>
+            <p>Handcrafted with love in Minehead</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script type="module" src="firebase.js"></script>
+    <script type="module" src="app.js"></script>
+</body>
+</html>
