@@ -35,7 +35,7 @@ const saveAllBtn = document.getElementById('save-all-changes-btn');
 const categoryTabs = document.querySelectorAll('.category-tab');
 let currentCategory = 'Hot Drinks';
 
-// Load admin settings on page load
+// Load settings on page load
 async function loadSettings() {
     try {
         const settings = await getAdminSettings();
@@ -65,7 +65,9 @@ async function loadSettings() {
         
     } catch (error) {
         console.error('Error loading settings:', error);
-        customMessageEl.textContent = 'Sorry, we\'re experiencing technical difficulties. Please check back soon!';
+        if (customMessageEl) {
+            customMessageEl.textContent = 'Sorry, we\'re experiencing technical difficulties. Please check back soon!';
+        }
     }
 }
 
@@ -115,34 +117,69 @@ function populateAdminForms(settings) {
     serviceDinein.checked = settings.services.includes('Dine-in');
     serviceTakeaway.checked = settings.services.includes('Takeaway');
     
-    // Menu items
+    // Menu items - render initial category
     renderMenuItems(settings.menu);
 }
 
 // Render menu items for admin editing
 function renderMenuItems(menu) {
+    // Clear container
     menuItemContainer.innerHTML = '';
     
-    // Create tabs and content for each category
+    // Reset active tab
+    categoryTabs.forEach(tab => tab.classList.remove('active'));
+    
+    // Set first tab as default if no active one
+    if (categoryTabs.length > 0 && !currentCategory) {
+        currentCategory = categoryTabs[0].dataset.category;
+        categoryTabs[0].classList.add('active');
+    }
+    
+    // Add event listeners to tabs if not already present
     categoryTabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            // Remove active class from all tabs
-            categoryTabs.forEach(t => t.classList.remove('active'));
-            // Add active class to clicked tab
-            tab.classList.add('active');
-            currentCategory = tab.dataset.category;
-            
-            // Render items for selected category
-            renderCategoryItems(menu[currentCategory] || []);
+        tab.removeEventListener('click', handleCategoryClick);
+        tab.addEventListener('click', handleCategoryClick);
+    });
+    
+    // Activate current category tab
+    const activeTab = Array.from(categoryTabs).find(tab => tab.dataset.category === currentCategory);
+    if (activeTab) {
+        activeTab.classList.add('active');
+    }
+    
+    // Render items for current category
+    const items = menu[currentCategory] || [];
+    renderCategoryItems(items);
+}
+
+// Handle category tab click
+function handleCategoryClick(e) {
+    currentCategory = e.target.dataset.category;
+    renderMenuItems(getCurrentMenuState()); // Use current state from UI or Firestore
+}
+
+// Get current menu state (from UI if editing, else from settings)
+function getCurrentMenuState() {
+    // We'll rebuild menu state from UI inputs if in admin mode
+    const categories = ['Hot Drinks', 'Cold Drinks', 'Sweet Treats', 'Savoury Treats'];
+    const menu = {};
+    
+    categories.forEach(cat => {
+        menu[cat] = [];
+        const itemElements = document.querySelectorAll(`.menu-item-edit[data-category="${cat}"]`);
+        itemElements.forEach(el => {
+            const nameInput = el.querySelector('input[name="name"]');
+            const priceInput = el.querySelector('input[name="price"]');
+            if (nameInput && priceInput && nameInput.value.trim() && priceInput.value.trim()) {
+                menu[cat].push({
+                    name: nameInput.value.trim(),
+                    price: priceInput.value.trim()
+                });
+            }
         });
     });
     
-    // Set first tab as active by default
-    if (categoryTabs.length > 0) {
-        categoryTabs[0].classList.add('active');
-        currentCategory = categoryTabs[0].dataset.category;
-        renderCategoryItems(menu[currentCategory] || []);
-    }
+    return menu;
 }
 
 // Render items for a specific category
@@ -157,25 +194,31 @@ function renderCategoryItems(items) {
     items.forEach((item, index) => {
         const itemDiv = document.createElement('div');
         itemDiv.className = 'menu-item-edit';
+        itemDiv.setAttribute('data-category', currentCategory);
         
         const nameInput = document.createElement('input');
         nameInput.type = 'text';
-        nameInput.value = item.name;
+        nameInput.name = 'name';
+        nameInput.value = item.name || '';
         nameInput.placeholder = 'Item name';
+        nameInput.style.flex = '2';
+        nameInput.style.marginRight = '10px';
         
         const priceInput = document.createElement('input');
         priceInput.type = 'text';
-        priceInput.value = item.price;
+        priceInput.name = 'price';
+        priceInput.value = item.price || '';
         priceInput.placeholder = 'Price (e.g., £3.50)';
+        priceInput.style.flex = '1';
+        priceInput.style.marginRight = '10px';
         
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'delete-btn';
         deleteBtn.textContent = 'Delete';
+        deleteBtn.style.flex = 'none';
         deleteBtn.addEventListener('click', () => {
-            // Remove item from array and re-render
-            const currentMenu = JSON.parse(localStorage.getItem('tempMenu') || '{}');
+            const currentMenu = getCurrentMenuState();
             currentMenu[currentCategory] = currentMenu[currentCategory]?.filter((_, i) => i !== index);
-            localStorage.setItem('tempMenu', JSON.stringify(currentMenu));
             renderCategoryItems(currentMenu[currentCategory] || []);
         });
         
@@ -266,6 +309,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             try {
                 await saveAdminSettings({ openingHours: hours });
                 alert('Opening hours saved successfully!');
+                // Also update homepage display
+                openingHoursEl.innerHTML = `
+                    <p><strong>Monday–Friday:</strong> ${hours.mondayToFriday}</p>
+                    <p><strong>Saturday:</strong> ${hours.saturday}</p>
+                    <p><strong>Sunday:</strong> ${hours.sunday}</p>
+                `;
             } catch (error) {
                 console.error('Error saving hours:', error);
                 alert('Failed to save hours. Please try again.');
@@ -283,6 +332,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             try {
                 await saveAdminSettings({ services });
                 alert('Services updated successfully!');
+                servicesDisplayEl.textContent = services.join(', ');
             } catch (error) {
                 console.error('Error saving services:', error);
                 alert('Failed to update services. Please try again.');
@@ -320,6 +370,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 addNewItemCategory.value = '';
                 
                 alert('Item added successfully!');
+                
+                // Re-render menu for current category
                 renderMenuItems(updatedMenu);
                 
             } catch (error) {
@@ -343,25 +395,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (serviceDinein.checked) services.push('Dine-in');
             if (serviceTakeaway.checked) services.push('Takeaway');
             
-            // Build menu object from inputs
-            const menu = {};
-            const categories = ['Hot Drinks', 'Cold Drinks', 'Sweet Treats', 'Savoury Treats'];
+            // Build menu object from UI inputs
+            const menu = getCurrentMenuState();
             
-            categories.forEach(cat => {
-                const items = [];
-                const itemElements = document.querySelectorAll(`.menu-item-edit:nth-of-type(n)`);
-                itemElements.forEach(el => {
-                    const inputs = el.querySelectorAll('input');
-                    if (inputs.length >= 2) {
-                        const name = inputs[0].value.trim();
-                        const price = inputs[1].value.trim();
-                        if (name && price) {
-                            items.push({ name, price });
-                        }
-                    }
-                });
-                menu[cat] = items;
-            });
+            // Validate at least one item per category isn't empty
+            const hasValidItems = Object.values(menu).some(catItems => catItems.length > 0);
+            if (!hasValidItems) {
+                alert('At least one menu item must be defined.');
+                return;
+            }
             
             try {
                 await saveAdminSettings({
@@ -370,11 +412,24 @@ document.addEventListener('DOMContentLoaded', async () => {
                     services: services,
                     menu: menu
                 });
+                
+                // Update live preview on admin page
+                renderMenuPreview(menu);
+                
                 alert('All changes saved successfully!');
             } catch (error) {
                 console.error('Error saving all changes:', error);
                 alert('Failed to save all changes. Please try again.');
             }
+        });
+    }
+    
+    // Initialize category tab behavior
+    if (categoryTabs.length > 0) {
+        categoryTabs[0].classList.add('active');
+        currentCategory = categoryTabs[0].dataset.category;
+        categoryTabs.forEach(tab => {
+            tab.addEventListener('click', handleCategoryClick);
         });
     }
 });
