@@ -9,7 +9,7 @@
 </head>
 <body class="admin-body">
     <div class="admin-container">
-        <!-- Login Form (shown by default) -->
+        <!-- Login Form -->
         <div id="login-form" class="admin-panel">
             <h2>Admin Login</h2>
             <form id="admin-login-form">
@@ -26,21 +26,21 @@
             </form>
         </div>
 
-        <!-- Admin Dashboard (hidden until login) -->
+        <!-- Admin Dashboard -->
         <div id="admin-dashboard" class="admin-panel hidden">
             <div class="dashboard-header">
                 <h2>Kiss Coffee Admin Panel</h2>
                 <button id="logout-btn" class="btn btn-secondary">Logout</button>
             </div>
 
-            <!-- Custom Message Editor -->
+            <!-- Custom Message -->
             <div class="panel-section">
                 <h3>Homepage Message</h3>
                 <textarea id="custom-message-editor" rows="4" placeholder="Enter the custom message that appears on the homepage..."></textarea>
                 <button id="save-message-btn" class="btn btn-primary">Save Message</button>
             </div>
 
-            <!-- Opening Hours Editor -->
+            <!-- Opening Hours -->
             <div class="panel-section">
                 <h3>Opening Hours</h3>
                 <div class="form-group">
@@ -58,7 +58,7 @@
                 <button id="save-hours-btn" class="btn btn-primary">Save Hours</button>
             </div>
 
-            <!-- Services Editor -->
+            <!-- Services -->
             <div class="panel-section">
                 <h3>Service Options</h3>
                 <div class="service-options">
@@ -70,17 +70,15 @@
                         <input type="checkbox" id="service-takeaway" value="Takeaway">
                         Takeaway
                     </label>
-                    <!-- Delivery is disabled per requirements -->
                     <p class="service-note">Note: Delivery is not available as per business policy.</p>
                 </div>
                 <button id="save-services-btn" class="btn btn-primary">Save Services</button>
             </div>
 
-            <!-- Menu Editor -->
+            <!-- Menu Management -->
             <div class="panel-section">
                 <h3>Menu Management</h3>
                 <div class="menu-category-list">
-                    <!-- Category tabs -->
                     <div class="category-tabs">
                         <button class="category-tab active" data-category="Hot Drinks">Hot Drinks</button>
                         <button class="category-tab" data-category="Cold Drinks">Cold Drinks</button>
@@ -88,15 +86,12 @@
                         <button class="category-tab" data-category="Savoury Treats">Savoury Treats</button>
                     </div>
 
-                    <!-- Items list -->
                     <div id="menu-items-container">
-                        <!-- Dynamic items will appear here -->
                         <div class="menu-item-placeholder">
                             <p>Select a category to manage menu items.</p>
                         </div>
                     </div>
 
-                    <!-- Add new item form -->
                     <div class="add-item-form">
                         <h4>Add New Item</h4>
                         <select id="new-item-category">
@@ -113,14 +108,12 @@
                 </div>
             </div>
 
-            <!-- Save All Changes Button -->
             <div class="save-all-container">
                 <button id="save-all-changes-btn" class="btn btn-primary">Save All Changes</button>
             </div>
         </div>
     </div>
 
-    <!-- JavaScript -->
     <script type="module" src="firebase.js"></script>
     <script type="module" src="app.js"></script>
 </body>
