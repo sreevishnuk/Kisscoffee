@@ -3,7 +3,6 @@ import { initializeApp } from "firebase/app";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { getFirestore, doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 
-// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyCddkfl0pC5jvjzUCWsthE3nnpZviWakQY",
   authDomain: "kisscoffee-1cf3b.firebaseapp.com",
@@ -18,19 +17,21 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Export functions for use in other files
 export { app, auth, db, getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, doc, getDoc, setDoc, updateDoc };
 
 // Helper function to get admin document from Firestore
 export async function getAdminSettings() {
+  console.log('🔍 Fetching admin settings from Firestore...');
   const adminDoc = doc(db, 'admin', 'settings');
   const docSnap = await getDoc(adminDoc);
-  
+
   if (docSnap.exists()) {
+    console.log('✅ Admin settings loaded:', docSnap.data());
     return docSnap.data();
   } else {
+    console.log('🆕 Creating default admin settings...');
     // Default settings if no document exists
-    return {
+    const defaultSettings = {
       customMessage: "Welcome to Kiss Coffee! Freshly brewed coffee and homemade treats just for you.",
       openingHours: {
         mondayToFriday: "8am–5pm",
@@ -78,11 +79,22 @@ export async function getAdminSettings() {
         ]
       }
     };
+    await setDoc(doc(db, 'admin', 'settings'), defaultSettings);
+    console.log('✅ Default settings created!');
+    return defaultSettings;
   }
 }
 
 // Helper function to save admin settings
 export async function saveAdminSettings(settings) {
+  console.log('💾 Saving admin settings:', settings);
   const adminDoc = doc(db, 'admin', 'settings');
-  await setDoc(adminDoc, settings, { merge: true });
+  try {
+    await setDoc(adminDoc, settings, { merge: true });
+    console.log('✅ Settings saved successfully!');
+    return true;
+  } catch (error) {
+    console.error('❌ Failed to save settings:', error);
+    throw error;
+  }
 }
